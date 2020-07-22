@@ -13,13 +13,13 @@
 using namespace std;
 using namespace cv;
 
-vector<float>myDetector;	//得到自己的检测子
-vector<string>FILENAME;	//正样本文件名称
+vector<float>myDetector;	//Get your own detector
+vector<string>FILENAME;	//The name of the positive sample
 string Forward = "D:\\traindatabase\\pos\\";
 string Back = ".jpg";
-int SumPicture = 500;	//正样本数量
+int SumPicture = 500;	//The number of positive sample
 
-/*训练自己的SVM模型，并以此得到检测子*/
+/*Train the svm module,and get your own detect unit*/
 void Train_SVMmodel(const string& data_path,const string& save_path)
 {
 	int ImgWidght = 64;
@@ -37,11 +37,11 @@ void Train_SVMmodel(const string& data_path,const string& save_path)
 			nLine++;
 			if (nLine % 2 == 0)
 			{
-				img_catg.push_back(atoi(buf.c_str()));	//atoi将字符串转化为整型，标志（0，1）
+				img_catg.push_back(atoi(buf.c_str()));	//atoi tranfer the string to int form data，and marked（0，1）
 			}
 			else
 			{
-				img_path.push_back(buf);	//图像路径
+				img_path.push_back(buf);	//the path of img
 			}
 		}
 	}
@@ -96,7 +96,7 @@ void Train_SVMmodel(const string& data_path,const string& save_path)
 	//+TermCriteria::EPS
 }
 
-/*得到自己的检测子*/
+/*get your own detect unit*/
 void Detect_Unit(const string& filename)
 {
 	//HOGDescriptor hog(Size(32, 64), Size(4, 4), Size(8, 8), Size(8, 8), 9);
@@ -105,7 +105,7 @@ void Detect_Unit(const string& filename)
 	DescriptorDim = svm->getVarCount();
 	Mat supportVector = svm->getSupportVectors();
 	int supportVectorNum = supportVector.rows;
-	cout << "支持向量个数为" << supportVectorNum << endl;
+	cout << "The number of support vectors is" << supportVectorNum << endl;
 	vector<float>svm_alpha;
 	vector<float>svm_svidx;
 	float svm_rho;
@@ -115,20 +115,20 @@ void Detect_Unit(const string& filename)
 	Mat supportVectorMat = Mat::zeros(supportVectorNum, DescriptorDim, CV_32FC1);
 	Mat resultMat = Mat::zeros(1, DescriptorDim, CV_32FC1);
 	supportVectorMat = supportVector;
-	//将alpha向量的数据复制到alphaMat中,返回SVM决策函数中的alpha向量
+	//Copy alpha vector data to alphaMat and return alpha vector in the dicision function of SVM
 	for (int i = 0; i < supportVectorNum; i++)
 	{
 		alphaMat.at<float>(0, i) = svm_alpha[i];
 	}
-	//计算-（alphaMat*supportVectorMat），结果放在resultMat中。
+	//caluculate-（alphaMat*supportVectorMat），and put the output in the resultMat
 	resultMat = -1 * alphaMat * supportVectorMat;
 	vector<float>myDetector;
-	//将resultMat中的数据复制到数组myDetector；
+	//copy the data in  the resultMat to array myDetector;
 	for (int i = 0; i < DescriptorDim; i++)
 	{
 		myDetector.push_back(resultMat.at<float>(0, i));
 	}
-	//最后添加偏移量rho,得到检测子
+	//最后添加偏移量rho,得到检测子Finally,add the offset,get your own detector.
 	myDetector.push_back(svm_rho);
 	HOGDescriptor myHOG;
 	Size s1(16,16);
@@ -148,11 +148,11 @@ void Detect_Unit(const string& filename)
 	}
 }
 
-/*加载检测子*/
-/*如果有检测子的话跳过此步骤*/
+/*Load detector*/
+/*if you have got detector,you could skip this step*/
 void Load_Detect_Vector()
 {
-	/*当myDetector为空时加载*/
+	/*Loaded when myDetector is empty*/
 	ifstream finPos("D:\\svm\\svm\\HOGDetectorForOpenCv.txt");
 	string buf;
 	int nLine = 0;
@@ -167,7 +167,7 @@ void Load_Detect_Vector()
 	finPos.close();
 }
 
-/*初始化HOG特征向量*/
+/*Init HOG eigen bector*/
 /*void Init_HOG_Detector()
 {
 	Size s1(16, 16);
@@ -179,7 +179,7 @@ void Load_Detect_Vector()
 	myHOG.nbins = 9;
 }*/
 
-/*最终的检测*/
+/*Finally,detect buttle*/
 void Detect_Final()
 {
 	/*VideoCapture detect(0);
@@ -190,7 +190,7 @@ void Detect_Final()
 	}*/
 	//Mat frame;
 	//Mat src;D:\traindatabase\pos\0.jpg
-	HOGDescriptor myHOG(Size(64,128),Size(16,16),Size(8,8),Size(8,8),9);	//得到自己的HOG特征向量
+	HOGDescriptor myHOG(Size(64,128),Size(16,16),Size(8,8),Size(8,8),9);	//Get your own HOG eigen vector
 	myHOG.setSVMDetector(myDetector);
 	VideoCapture detect(0);
 	Mat inter;
@@ -209,9 +209,9 @@ void Detect_Final()
 		};
 		vector<Rect>found, found_filtered;
 		myHOG.detectMultiScale(inter, found, 0, Size(8, 8), Size(32, 32), 1.05, 2);
-		//cout << "找到的矩形框个数为" << found.size() << endl;
+		//cout << "The number of rectangular boxes found is" << found.size() << endl;
 		cout << found.size();
-		//找出所有没有嵌套的矩形框，并放入found_filtered中，如果有嵌套，取最外面的一个
+		//Look for all unnested rectangles and put in found_filtered,if has unnested,take the outermost one
 		for (unsigned int i = 0; i < found.size(); i++)
 		{
 			Rect r = found[i];
@@ -224,7 +224,7 @@ void Detect_Final()
 				found_filtered.push_back(r);
 			}
 		}
-		//画矩形框
+		//drawing rectangular box
 		for (unsigned int i = 0; i < found_filtered.size(); i++)
 		{
 			Rect r = found_filtered[i];
@@ -246,9 +246,7 @@ void Detect_Final()
 	//cvtColor(src, frame, COLOR_BGR2GRAY);
 	/*vector<Rect>found, found_filtered;
 	myHOG.detectMultiScale(inter, found, 0, Size(8, 8), Size(32, 32), 1.05, 2);
-	//cout << "找到的矩形框个数为" << found.size() << endl;
 	cout << found.size();
-	//找出所有没有嵌套的矩形框，并放入found_filtered中，如果有嵌套，取最外面的一个
 	for (unsigned int i = 0; i < found.size(); i++)
 	{
 		Rect r = found[i];
@@ -261,7 +259,6 @@ void Detect_Final()
 			found_filtered.push_back(r);
 		}
 	}
-	//画矩形框
 	for (unsigned int i = 0; i < found_filtered.size(); i++)
 	{
 		Rect r = found_filtered[i];
@@ -280,7 +277,7 @@ void Detect_Final()
 	//imshow("src", output);*/
 }
 
-/*利用opencv来对正样本进行拍照*/
+/*利用opencv来对正样本进行拍照use opencv take photos for positive samples*/
 void GenerateFileName()
 {
 	for (size_t i = 0; i < SumPicture; i++)
@@ -295,7 +292,7 @@ void GenerateFileName()
 	}
 }
 
-/*利用opencv拍照得到正样本*/
+/*take photos*/
 void TakePhotoForPos()
 {
 	VideoCapture capture(0);
@@ -327,7 +324,7 @@ void TakePhotoForPos()
 
 int main(int argc, char** argv)
 {
-	/*训练SVM+HOG*/
+	/*training SVM+HOG*/
 	//TakePhotoForPos();
 	Train_SVMmodel("D:\\traindatabase\\path.txt", "SVM_HOG.xml");
 	Detect_Unit("SVM_HOG.xml");
